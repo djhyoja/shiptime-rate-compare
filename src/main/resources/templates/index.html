@@ -7,6 +7,11 @@
 </head>
 <body>
 <h1>Shipping Rate Comparison</h1>
-<p>Coming soon: enter package details to compare shipping rates.</p>
+
+<form method="post" th:action="@{/hello}">
+    <button type="submit">Say Hello</button>
+</form>
+
+<p th:if="${message}" th:text="${message}"></p>
 </body>
 </html>
