@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: shiptime-rate-compare
+
+server:
+  port: 8080
+
+shiptime:
+  # Base URL of the ShipTime sandbox REST API (see sandboxrestapi.shiptime.com).
+  base-url: ${SHIPTIME_BASE_URL:}
+  username: ${SHIPTIME_USERNAME:}
+  password: ${SHIPTIME_PASSWORD:}
+  connect-timeout-ms: 5000
+  read-timeout-ms: 15000
