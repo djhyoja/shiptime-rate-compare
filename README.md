@@ -17,7 +17,7 @@ Credentials are read from environment variables. They are never committed.
 
 | Variable | Description |
 |---|---|
-| `SHIPTIME_BASE_URL` | Base URL of the ShipTime sandbox REST API |
+| `SHIPTIME_BASE_URL` | Base URL of the ShipTime REST API (default: `https://sandboxrestapi.shiptime.com`) |
 | `SHIPTIME_USERNAME` | Sandbox username (Basic Auth) |
 | `SHIPTIME_PASSWORD` | Sandbox password (Basic Auth) |
 

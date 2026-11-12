@@ -1,0 +1,53 @@
+{
+  "availableRates": [
+    {
+      "baseCharge": { "currency": "CAD", "amount": 1088 },
+      "surcharges": [ { "price": { "currency": "CAD", "amount": 577 }, "code": "FUEL", "name": "Fuel Surcharge" } ],
+      "taxes": [ { "price": { "currency": "CAD", "amount": 216 }, "code": "TAX", "name": "HST" } ],
+      "totalCharge": { "currency": "CAD", "amount": 1881 },
+      "totalBeforeTaxes": { "currency": "CAD", "amount": 1665 },
+      "exchangeRate": 0.0000,
+      "carrierId": "825",
+      "carrierName": "Precision",
+      "serviceId": "Ground",
+      "serviceName": "Ground",
+      "transitDays": 1,
+      "transitUnit": "Days",
+      "cutoffTime": "13:00",
+      "serviceFeatures": [ "FREE_PICKUP" ],
+      "quoteId": "72db06b5271648737882e6829dcddbce"
+    },
+    {
+      "baseCharge": { "currency": "CAD", "amount": 1128 },
+      "surcharges": [],
+      "taxes": [ { "price": { "currency": "CAD", "amount": 147 }, "code": "TAX", "name": "HST" } ],
+      "totalCharge": { "currency": "CAD", "amount": 1275 },
+      "totalBeforeTaxes": { "currency": "CAD", "amount": 1128 },
+      "exchangeRate": 0.0000,
+      "carrierId": "14",
+      "carrierName": "Canpar",
+      "serviceId": "1",
+      "serviceName": "Ground",
+      "transitDays": 1,
+      "transitUnit": "Days",
+      "serviceFeatures": [ "DROP_OFF", "FREE_PICKUP" ],
+      "quoteId": "0300c5ebb1758c5ce643456fe67c2634"
+    },
+    {
+      "baseCharge": { "currency": "CAD", "amount": 905 },
+      "surcharges": [ { "price": { "currency": "CAD", "amount": 451 }, "code": "FUEL", "name": "FUEL" } ],
+      "taxes": [ { "price": { "currency": "CAD", "amount": 176 }, "code": "TAX", "name": "HST" } ],
+      "totalCharge": { "currency": "CAD", "amount": 1532 },
+      "totalBeforeTaxes": { "currency": "CAD", "amount": 1356 },
+      "exchangeRate": 0.0000,
+      "carrierId": "123",
+      "carrierName": "Loomis",
+      "serviceId": "DD",
+      "serviceName": "Loomis Ground",
+      "transitDays": 1,
+      "transitUnit": "Days",
+      "serviceFeatures": [ "FREE_PICKUP" ],
+      "quoteId": "b1bcb1a8e024118d1e9a52323ca906c0"
+    }
+  ]
+}

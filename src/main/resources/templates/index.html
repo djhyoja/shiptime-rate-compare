@@ -4,14 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Shipping Rate Comparison</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<h1>Shipping Rate Comparison</h1>
+<main>
+    <h1>Shipping Rate Comparison</h1>
+    <p class="steps"><strong>1. Package details</strong> &rarr; 2. Choose a service &rarr; 3. Shipment</p>
 
-<form method="post" th:action="@{/hello}">
-    <button type="submit">Say Hello</button>
-</form>
+    <div class="alert error" th:if="${errorMessage}">
+        <p th:text="${errorMessage}"></p>
+        <ul th:if="${errorDetails != null and !errorDetails.isEmpty()}">
+            <li th:each="detail : ${errorDetails}" th:text="${detail}"></li>
+        </ul>
+    </div>
+    <div class="alert info" th:if="${infoMessage}" th:text="${infoMessage}"></div>
 
-<p th:if="${message}" th:text="${message}"></p>
+    <form method="post" th:action="@{/rates}" th:object="${rateForm}" novalidate>
+        <div class="two-columns">
+            <fieldset th:replace="~{fragments :: address('from', 'From (origin)')}"></fieldset>
+            <fieldset th:replace="~{fragments :: address('to', 'To (destination)')}"></fieldset>
+        </div>
+
+        <fieldset class="card">
+            <legend>Package</legend>
+            <div class="row">
+                <label th:replace="~{fragments :: number('length', 'Length (cm)', '0.01')}"></label>
+                <label th:replace="~{fragments :: number('width', 'Width (cm)', '0.01')}"></label>
+                <label th:replace="~{fragments :: number('height', 'Height (cm)', '0.01')}"></label>
+                <label th:replace="~{fragments :: number('weight', 'Weight (kg)', '0.001')}"></label>
+            </div>
+        </fieldset>
+
+        <button type="submit" class="primary">Get rates</button>
+    </form>
+</main>
 </body>
 </html>

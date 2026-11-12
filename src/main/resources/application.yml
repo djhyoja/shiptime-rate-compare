@@ -4,10 +4,12 @@ spring:
 
 server:
   port: 8080
+  servlet:
+    session:
+      tracking-modes: cookie
 
 shiptime:
-  # Base URL of the ShipTime sandbox REST API (see sandboxrestapi.shiptime.com).
-  base-url: ${SHIPTIME_BASE_URL:}
+  base-url: ${SHIPTIME_BASE_URL:https://sandboxrestapi.shiptime.com}
   username: ${SHIPTIME_USERNAME:}
   password: ${SHIPTIME_PASSWORD:}
   connect-timeout-ms: 5000

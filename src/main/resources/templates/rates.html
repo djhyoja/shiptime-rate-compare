@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose a Service</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main th:with="req=${quote.request()}">
+    <h1>Shipping Rate Comparison</h1>
+    <p class="steps">1. Package details &rarr; <strong>2. Choose a service</strong> &rarr; 3. Shipment</p>
+
+    <p class="summary">
+        <span th:text="|${req.from().city()}, ${req.from().state()}|">Oakville, ON</span>
+        &rarr;
+        <span th:text="|${req.to().city()}, ${req.to().state()}|">Toronto, ON</span>
+        &middot;
+        <span th:with="item=${req.lineItems()[0]}"
+              th:text="|${item.length()} × ${item.width()} × ${item.height()} cm, ${item.weight()} kg|">30 x 20 x 10 cm, 2 kg</span>
+        &middot; <a th:href="@{/}">Change</a>
+    </p>
+
+    <form method="post" action="#">
+        <p class="hint" th:text="|${quote.options().size()} services found, cheapest first.|">16 services found.</p>
+        <div class="options">
+            <label class="option" th:each="opt, stat : ${quote.options()}">
+                <input type="radio" name="quoteId" th:value="${opt.quoteId()}" th:checked="${stat.first}">
+                <span class="carrier">
+                    <strong th:text="${opt.carrierName()}">Canpar</strong>
+                    <span th:text="${opt.serviceName()}">Ground</span>
+                </span>
+                <span class="transit" th:text="${opt.transitText()}">1 day</span>
+                <span class="price"
+                      th:text="|$${#numbers.formatDecimal(opt.price(), 1, 'COMMA', 2, 'POINT')} ${opt.currency()}|">$12.75 CAD</span>
+            </label>
+        </div>
+        <button type="submit" class="primary" disabled title="Shipment creation is the next step">Continue</button>
+    </form>
+</main>
+</body>
+</html>
