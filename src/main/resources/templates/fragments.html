@@ -8,26 +8,26 @@
 
     <div class="row">
         <label class="field">Contact name
-            <input type="text" th:field="*{__${p}__.name}" maxlength="40" placeholder="John Smith">
+            <input type="text" th:field="*{__${p}__.name}" maxlength="40">
             <span class="error" th:if="${#fields.hasErrors('__${p}__.name')}"
                   th:text="${#fields.errors('__${p}__.name')[0]}"></span>
         </label>
         <label class="field">Company
-            <input type="text" th:field="*{__${p}__.company}" maxlength="40" placeholder="Acme Ltd.">
+            <input type="text" th:field="*{__${p}__.company}" maxlength="40">
             <span class="error" th:if="${#fields.hasErrors('__${p}__.company')}"
                   th:text="${#fields.errors('__${p}__.company')[0]}"></span>
         </label>
     </div>
 
     <label class="field">Street address
-        <input type="text" th:field="*{__${p}__.street}" maxlength="50" placeholder="123 Main St">
+        <input type="text" th:field="*{__${p}__.street}" maxlength="50">
         <span class="error" th:if="${#fields.hasErrors('__${p}__.street')}"
               th:text="${#fields.errors('__${p}__.street')[0]}"></span>
     </label>
 
     <div class="row">
         <label class="field">City
-            <input type="text" th:field="*{__${p}__.city}" maxlength="40" placeholder="Oakville">
+            <input type="text" th:field="*{__${p}__.city}" maxlength="40">
             <span class="error" th:if="${#fields.hasErrors('__${p}__.city')}"
                   th:text="${#fields.errors('__${p}__.city')[0]}"></span>
         </label>
@@ -40,14 +40,16 @@
                   th:text="${#fields.errors('__${p}__.province')[0]}"></span>
         </label>
         <label class="field">Postal code
-            <input type="text" th:field="*{__${p}__.postalCode}" maxlength="7" placeholder="L6J 1H6">
+            <input type="text" th:field="*{__${p}__.postalCode}" maxlength="7"
+                   data-format="postal" autocapitalize="characters">
             <span class="error" th:if="${#fields.hasErrors('__${p}__.postalCode')}"
                   th:text="${#fields.errors('__${p}__.postalCode')[0]}"></span>
         </label>
     </div>
 
     <label class="field">Phone
-        <input type="tel" th:field="*{__${p}__.phone}" maxlength="15" placeholder="905 555 1234">
+        <input type="tel" th:field="*{__${p}__.phone}" maxlength="14"
+               data-format="phone" inputmode="numeric">
         <span class="error" th:if="${#fields.hasErrors('__${p}__.phone')}"
               th:text="${#fields.errors('__${p}__.phone')[0]}"></span>
     </label>

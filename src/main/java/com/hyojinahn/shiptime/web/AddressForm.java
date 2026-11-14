@@ -36,7 +36,7 @@ public class AddressForm {
     private String postalCode;
 
     @NotNull(message = "Enter a phone number")
-    @Pattern(regexp = "\\s*\\(?\\d{3}\\)?[ .-]?\\d{3}[ .-]?\\d{4}\\s*", message = "Use a phone number like 905 555 1234")
+    @Pattern(regexp = "\\s*\\(?\\d{3}\\)?[ .-]?\\d{3}[ .-]?\\d{4}\\s*", message = "Use a 10-digit phone number like (905) 555-1234")
     private String phone;
 
     public String getName() { return name; }
