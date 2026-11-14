@@ -84,6 +84,11 @@ button.primary:disabled { background: var(--border); cursor: not-allowed; }
 .transit { color: var(--muted); }
 .price { font-weight: 600; text-align: right; min-width: 110px; }
 
+.result { display: grid; grid-template-columns: max-content 1fr; gap: 8px 24px; }
+.result dt { color: var(--muted); }
+.result dd { margin: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.tracking { font-family: ui-monospace, Consolas, monospace; }
+
 @media (max-width: 700px) {
     .two-columns { grid-template-columns: 1fr; }
     .option { grid-template-columns: auto 1fr; }

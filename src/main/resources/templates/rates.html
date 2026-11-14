@@ -21,7 +21,14 @@
         &middot; <a th:href="@{/}">Change</a>
     </p>
 
-    <form method="post" action="#">
+    <div class="alert error" th:if="${errorMessage}">
+        <p th:text="${errorMessage}"></p>
+        <ul th:if="${errorDetails != null and !errorDetails.isEmpty()}">
+            <li th:each="detail : ${errorDetails}" th:text="${detail}"></li>
+        </ul>
+    </div>
+
+    <form method="post" th:action="@{/shipments}">
         <p class="hint" th:text="|${quote.options().size()} services found, cheapest first.|">16 services found.</p>
         <div class="options">
             <label class="option" th:each="opt, stat : ${quote.options()}">
@@ -35,7 +42,7 @@
                       th:text="|$${#numbers.formatDecimal(opt.price(), 1, 'COMMA', 2, 'POINT')} ${opt.currency()}|">$12.75 CAD</span>
             </label>
         </div>
-        <button type="submit" class="primary" disabled title="Shipment creation is the next step">Continue</button>
+        <button type="submit" class="primary">Create shipment</button>
     </form>
 </main>
 </body>

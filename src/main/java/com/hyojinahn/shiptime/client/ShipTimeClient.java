@@ -1,6 +1,7 @@
 package com.hyojinahn.shiptime.client;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,8 @@ import org.springframework.web.client.RestClientException;
 import com.hyojinahn.shiptime.client.dto.ErrorBody;
 import com.hyojinahn.shiptime.client.dto.RateRequest;
 import com.hyojinahn.shiptime.client.dto.RateResponse;
+import com.hyojinahn.shiptime.client.dto.ShipmentRequest;
+import com.hyojinahn.shiptime.client.dto.ShipmentResponse;
 import com.hyojinahn.shiptime.config.ShipTimeProperties;
 
 /**
@@ -24,6 +27,7 @@ import com.hyojinahn.shiptime.config.ShipTimeProperties;
 public class ShipTimeClient {
 
     static final String RATES_PATH = "/rest/rates";
+    static final String SHIPMENTS_PATH = "/rest/shipments";
 
     private static final Logger log = LoggerFactory.getLogger(ShipTimeClient.class);
 
@@ -40,29 +44,50 @@ public class ShipTimeClient {
      * and comes back as an empty response, not as an error.
      */
     public RateResponse getRates(RateRequest request) {
+        return post(RATES_PATH, request, RateResponse.class, RateResponse::empty);
+    }
+
+    /** Creates a shipment for a quote returned by {@link #getRates}. */
+    public ShipmentResponse createShipment(ShipmentRequest request) {
+        return post(SHIPMENTS_PATH, request, ShipmentResponse.class, null);
+    }
+
+    /**
+     * Sends {@code body} as JSON and reads the response.
+     * 400 becomes REJECTED with ShipTime's messages; other failures become UNAVAILABLE.
+     *
+     * @param emptyResult answer for 404 or an empty body; null if those are errors
+     */
+    private <T> T post(String path, Object body, Class<T> type, Supplier<T> emptyResult) {
         if (!properties.configured()) {
             throw ShipTimeApiException.unavailable("ShipTime credentials are not configured", null);
         }
         try {
             return restClient.post()
-                    .uri(RATES_PATH)
+                    .uri(path)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(request)
+                    .body(body)
                     .exchange((req, res) -> {
                         HttpStatusCode status = res.getStatusCode();
                         if (status.is2xxSuccessful()) {
-                            RateResponse body = res.bodyTo(RateResponse.class);
-                            return body == null ? RateResponse.empty() : body;
+                            T result = res.bodyTo(type);
+                            if (result != null) {
+                                return result;
+                            }
+                            if (emptyResult != null) {
+                                return emptyResult.get();
+                            }
+                            throw ShipTimeApiException.unavailable("ShipTime returned an empty response", null);
                         }
-                        if (status.value() == HttpStatus.NOT_FOUND.value()) {
-                            return RateResponse.empty();
+                        if (status.value() == HttpStatus.NOT_FOUND.value() && emptyResult != null) {
+                            return emptyResult.get();
                         }
                         if (status.value() == HttpStatus.BAD_REQUEST.value()) {
                             List<String> messages = readMessages(res);
-                            log.warn("ShipTime rejected rate request: {}", messages);
+                            log.warn("ShipTime rejected {}: {}", path, messages);
                             throw ShipTimeApiException.rejected(messages);
                         }
-                        log.error("ShipTime rate request failed with status {}", status.value());
+                        log.error("ShipTime {} failed with status {}", path, status.value());
                         throw ShipTimeApiException.unavailable("ShipTime returned " + status.value(), null);
                     });
         } catch (ResourceAccessException e) {

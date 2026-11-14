@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shipment Created</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main>
+    <h1>Shipping Rate Comparison</h1>
+    <p class="steps">1. Package details &rarr; 2. Choose a service &rarr; <strong>3. Shipment</strong></p>
+
+    <div class="alert info">Shipment created.</div>
+
+    <dl class="card result">
+        <th:block th:if="${option != null}">
+            <dt>Service</dt>
+            <dd th:text="|${option.carrierName()} ${option.serviceName()}|">Canpar Ground</dd>
+            <dt>Price</dt>
+            <dd th:text="|$${#numbers.formatDecimal(option.price(), 1, 'COMMA', 2, 'POINT')} ${option.currency()}|">$12.75 CAD</dd>
+        </th:block>
+        <dt>Shipment ID</dt>
+        <dd th:text="${shipment.shipId()}">4841164</dd>
+        <dt>Tracking number</dt>
+        <dd>
+            <span th:each="number : ${shipment.trackingNumbers()}" th:text="${number}" class="tracking">D420917200000007637001</span>
+            <a th:if="${shipment.carrierTrackingUrl() != null}" th:href="${shipment.carrierTrackingUrl()}"
+               target="_blank" rel="noopener">Track on carrier site</a>
+        </dd>
+        <dt>Label</dt>
+        <dd>
+            <a th:if="${shipment.labelUrl() != null}" th:href="${shipment.labelUrl()}"
+               target="_blank" rel="noopener">Download label (PDF)</a>
+        </dd>
+    </dl>
+
+    <a th:href="@{/}">Ship another package</a>
+</main>
+</body>
+</html>

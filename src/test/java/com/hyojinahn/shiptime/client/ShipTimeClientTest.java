@@ -32,6 +32,8 @@ import com.hyojinahn.shiptime.client.dto.Address;
 import com.hyojinahn.shiptime.client.dto.LineItem;
 import com.hyojinahn.shiptime.client.dto.RateRequest;
 import com.hyojinahn.shiptime.client.dto.RateResponse;
+import com.hyojinahn.shiptime.client.dto.ShipmentRequest;
+import com.hyojinahn.shiptime.client.dto.ShipmentResponse;
 import com.hyojinahn.shiptime.config.ShipTimeClientConfig;
 import com.hyojinahn.shiptime.config.ShipTimeProperties;
 
@@ -134,6 +136,54 @@ class ShipTimeClientTest {
         ShipTimeClient unconfigured = new ShipTimeClient(RestClient.create(), empty);
 
         assertThatThrownBy(() -> unconfigured.getRates(sampleRequest()))
+                .isInstanceOfSatisfying(ShipTimeApiException.class,
+                        e -> assertThat(e.reason()).isEqualTo(ShipTimeApiException.Reason.UNAVAILABLE));
+    }
+
+    @Test
+    void createsShipmentWithQuoteAndSameRateRequest() {
+        server.expect(requestTo(BASE_URL + "/rest/shipments"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, EXPECTED_AUTH))
+                .andExpect(jsonPath("$.carrierId").value("14"))
+                .andExpect(jsonPath("$.serviceId").value("1"))
+                .andExpect(jsonPath("$.quoteId").value("q1"))
+                .andExpect(jsonPath("$.rateRequest.from.postalCode").value("L6J1H6"))
+                .andExpect(jsonPath("$.rateRequest.shipDate").value("2026-11-12"))
+                .andRespond(withSuccess("""
+                        {"shipId":4841164,
+                         "trackingNumbers":["D420917200000007637001"],
+                         "labelUrl":"http://shiptime.test/rest/shipments/4841164/label",
+                         "carrierTrackingUrl":"https://carrier.test/track?ref=D420917200000007637001"}
+                        """, MediaType.APPLICATION_JSON));
+
+        ShipmentResponse response = client.createShipment(new ShipmentRequest("14", "1", "q1", sampleRequest()));
+
+        assertThat(response.shipId()).isEqualTo(4841164L);
+        assertThat(response.trackingNumbers()).containsExactly("D420917200000007637001");
+        assertThat(response.labelUrl()).endsWith("/rest/shipments/4841164/label");
+        server.verify();
+    }
+
+    @Test
+    void rejectedShipmentKeepsShipTimeMessages() {
+        server.expect(requestTo(BASE_URL + "/rest/shipments"))
+                .andRespond(withBadRequest()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"messages\":[\"Quote has expired\"]}"));
+
+        assertThatThrownBy(() -> client.createShipment(new ShipmentRequest("14", "1", "q1", sampleRequest())))
+                .isInstanceOfSatisfying(ShipTimeApiException.class, e -> {
+                    assertThat(e.reason()).isEqualTo(ShipTimeApiException.Reason.REJECTED);
+                    assertThat(e.details()).containsExactly("Quote has expired");
+                });
+    }
+
+    @Test
+    void shipmentNotFoundIsAnErrorNotAnEmptyResult() {
+        server.expect(requestTo(BASE_URL + "/rest/shipments")).andRespond(withResourceNotFound());
+
+        assertThatThrownBy(() -> client.createShipment(new ShipmentRequest("14", "1", "q1", sampleRequest())))
                 .isInstanceOfSatisfying(ShipTimeApiException.class,
                         e -> assertThat(e.reason()).isEqualTo(ShipTimeApiException.Reason.UNAVAILABLE));
     }
