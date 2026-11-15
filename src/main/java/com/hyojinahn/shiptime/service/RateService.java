@@ -14,8 +14,6 @@ import com.hyojinahn.shiptime.client.dto.Address;
 import com.hyojinahn.shiptime.client.dto.LineItem;
 import com.hyojinahn.shiptime.client.dto.Quote;
 import com.hyojinahn.shiptime.client.dto.RateRequest;
-import com.hyojinahn.shiptime.web.AddressForm;
-import com.hyojinahn.shiptime.web.RateForm;
 
 /**
  * Builds the rate request from the form, calls ShipTime and returns the
@@ -41,8 +39,8 @@ public class RateService {
         this.clock = clock;
     }
 
-    public RateQuote getRates(RateForm form) {
-        RateRequest request = toRequest(form);
+    public RateQuote getRates(RateInput input) {
+        RateRequest request = toRequest(input);
         List<RateOption> options = client.getRates(request).rates().stream()
                 .filter(quote -> quote.totalCharge() != null) // drop null price
                 .map(RateService::toOption) // cent to dollar
@@ -51,27 +49,27 @@ public class RateService {
         return new RateQuote(request, options);
     }
 
-    RateRequest toRequest(RateForm form) {
-        LineItem item = new LineItem(form.getLength(), form.getWidth(), form.getHeight(), form.getWeight());
+    RateRequest toRequest(RateInput input) {
+        LineItem item = new LineItem(input.length(), input.width(), input.height(), input.weight());
         return new RateRequest(
-                toAddress(form.getFrom()),
-                toAddress(form.getTo()),
+                toAddress(input.from()),
+                toAddress(input.to()),
                 List.of(item),
                 PACKAGE_TYPE,
                 UNIT_OF_MEASUREMENT,
                 LocalDate.now(clock));
     }
 
-    private static Address toAddress(AddressForm form) {
+    private static Address toAddress(AddressInput input) {
         return new Address(
-                form.getName().trim(),
-                form.getCompany().trim(),
-                form.getStreet().trim(),
-                form.getCity().trim(),
-                form.getProvince(),
-                normalizePostalCode(form.getPostalCode()),
+                input.name().trim(),
+                input.company().trim(),
+                input.street().trim(),
+                input.city().trim(),
+                input.province(),
+                normalizePostalCode(input.postalCode()),
                 COUNTRY_CODE,
-                normalizePhone(form.getPhone()));
+                normalizePhone(input.phone()));
     }
 
     /** "l6j 1h6" → "L6J1H6" */

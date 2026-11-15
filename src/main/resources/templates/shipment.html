@@ -14,7 +14,7 @@
     <div class="alert info">Shipment created.</div>
 
     <dl class="card result">
-        <th:block th:if="${option != null}">
+        <th:block th:with="option=${shipment.option()}">
             <dt>Service</dt>
             <dd th:text="|${option.carrierName()} ${option.serviceName()}|">Canpar Ground</dd>
             <dt>Price</dt>
@@ -30,7 +30,7 @@
         </dd>
         <dt>Label</dt>
         <dd>
-            <a th:if="${shipment.shipId() != null}" th:href="@{/shipments/{id}/label(id=${shipment.shipId()})}"
+            <a th:href="@{/shipments/{id}/label(id=${shipment.shipId()})}"
                target="_blank" rel="noopener">Download label (PDF)</a>
         </dd>
     </dl>

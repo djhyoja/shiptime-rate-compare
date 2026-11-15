@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import com.hyojinahn.shiptime.service.AddressInput;
+
 /**
  * One Canadian address on the form. Limits follow the ShipTime API.
  * Input is trimmed and blank input becomes null before validation (see RateController).
@@ -59,4 +61,9 @@ public class AddressForm {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    /** Converts the validated form into the service input. */
+    public AddressInput toInput() {
+        return new AddressInput(name, company, street, city, province, postalCode, phone);
+    }
 }

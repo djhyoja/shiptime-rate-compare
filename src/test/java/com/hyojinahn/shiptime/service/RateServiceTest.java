@@ -22,8 +22,6 @@ import com.hyojinahn.shiptime.client.dto.Money;
 import com.hyojinahn.shiptime.client.dto.Quote;
 import com.hyojinahn.shiptime.client.dto.RateRequest;
 import com.hyojinahn.shiptime.client.dto.RateResponse;
-import com.hyojinahn.shiptime.web.AddressForm;
-import com.hyojinahn.shiptime.web.RateForm;
 
 class RateServiceTest {
 
@@ -43,7 +41,7 @@ class RateServiceTest {
     void buildsRequestFromFormWithFixedValues() {
         when(client.getRates(any())).thenReturn(RateResponse.empty());
 
-        service.getRates(sampleForm());
+        service.getRates(sampleInput());
 
         ArgumentCaptor<RateRequest> captor = ArgumentCaptor.forClass(RateRequest.class);
         verify(client).getRates(captor.capture());
@@ -68,7 +66,7 @@ class RateServiceTest {
                 quote("q-canpar", "Canpar", 1275, 1),
                 quote("q-loomis", "Loomis", 1532, 1)), null));
 
-        RateQuote result = service.getRates(sampleForm());
+        RateQuote result = service.getRates(sampleInput());
 
         assertThat(result.options()).extracting(RateOption::carrierName)
                 .containsExactly("Canpar", "Loomis", "Precision");
@@ -83,7 +81,7 @@ class RateServiceTest {
                 quote("q-unknown", "Unknown", 1500, null),
                 quote("q-fast", "Fast", 1500, 1)), null));
 
-        RateQuote result = service.getRates(sampleForm());
+        RateQuote result = service.getRates(sampleInput());
 
         assertThat(result.options()).extracting(RateOption::carrierName)
                 .containsExactly("Fast", "Slow", "Unknown");
@@ -95,7 +93,7 @@ class RateServiceTest {
                 new Quote("q-broken", "1", "Broken", "S", "Service", null, 1, "Days"),
                 quote("q-ok", "Ok", 1000, 1)), null));
 
-        assertThat(service.getRates(sampleForm()).options()).extracting(RateOption::quoteId)
+        assertThat(service.getRates(sampleInput()).options()).extracting(RateOption::quoteId)
                 .containsExactly("q-ok");
     }
 
@@ -103,7 +101,7 @@ class RateServiceTest {
     void keepsRequestForTheShipmentStep() {
         when(client.getRates(any())).thenReturn(RateResponse.empty());
 
-        RateQuote result = service.getRates(sampleForm());
+        RateQuote result = service.getRates(sampleInput());
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.request().to().postalCode()).isEqualTo("M5H2N2");
@@ -121,27 +119,13 @@ class RateServiceTest {
                 new Money(cents, "CAD"), transitDays, "Days");
     }
 
-    static RateForm sampleForm() {
-        RateForm form = new RateForm();
-        form.setFrom(address("John Smith ", "Acme", "1 Main St", "Oakville", "ON", "l6j 1h6", "(905) 555-1234"));
-        form.setTo(address("Jane Doe", "Beta", "100 Queen St W", "Toronto", "ON", "M5H 2N2", "416 555 1234"));
-        form.setLength(new BigDecimal("30"));
-        form.setWidth(new BigDecimal("20"));
-        form.setHeight(new BigDecimal("10"));
-        form.setWeight(new BigDecimal("2.5"));
-        return form;
-    }
-
-    private static AddressForm address(String name, String company, String street, String city,
-                                       String province, String postalCode, String phone) {
-        AddressForm address = new AddressForm();
-        address.setName(name);
-        address.setCompany(company);
-        address.setStreet(street);
-        address.setCity(city);
-        address.setProvince(province);
-        address.setPostalCode(postalCode);
-        address.setPhone(phone);
-        return address;
+    static RateInput sampleInput() {
+        return new RateInput(
+                new AddressInput("John Smith ", "Acme", "1 Main St", "Oakville", "ON", "l6j 1h6", "(905) 555-1234"),
+                new AddressInput("Jane Doe", "Beta", "100 Queen St W", "Toronto", "ON", "M5H 2N2", "416 555 1234"),
+                new BigDecimal("30"),
+                new BigDecimal("20"),
+                new BigDecimal("10"),
+                new BigDecimal("2.5"));
     }
 }

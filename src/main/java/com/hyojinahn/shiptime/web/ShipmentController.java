@@ -20,21 +20,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.hyojinahn.shiptime.client.ShipTimeApiException;
-import com.hyojinahn.shiptime.client.dto.ShipmentResponse;
-import com.hyojinahn.shiptime.service.RateOption;
 import com.hyojinahn.shiptime.service.RateQuote;
+import com.hyojinahn.shiptime.service.ShipmentResult;
 import com.hyojinahn.shiptime.service.ShipmentService;
 
 /**
  * Step 3: create a shipment for the chosen rate, show the result and serve its label.
- * Only the quote ID comes from the page. Carrier, service and the rate request
- * are taken from the quote stored in the session.
+ * Only the quote ID comes from the page; the service takes everything else from the stored quote.
  */
 @Controller
 public class ShipmentController {
 
     static final String SESSION_SHIPMENT = "shipment";
-    static final String SESSION_SHIPPED_OPTION = "shippedOption";
     static final String SESSION_SHIPMENT_IDS = "shipmentIds";
 
     private final ShipmentService shipmentService;
@@ -50,37 +47,34 @@ public class ShipmentController {
         if (!(session.getAttribute(RateController.SESSION_QUOTE) instanceof RateQuote quote)) {
             return "redirect:/";
         }
-        Optional<RateOption> selected = quoteId == null ? Optional.empty() : quote.option(quoteId);
-        if (selected.isEmpty()) {
-            return "redirect:/rates";
-        }
-        RateOption option = selected.get();
 
-        ShipmentResponse shipment;
+        Optional<ShipmentResult> created;
         try {
-            shipment = shipmentService.createShipment(quote.request(), option);
+            created = shipmentService.createShipment(quote, quoteId);
         } catch (ShipTimeApiException e) {
             model.addAttribute("quote", quote);
             model.addAttribute("errorMessage", userMessage(e));
             model.addAttribute("errorDetails", e.details());
             return "rates";
         }
+        if (created.isEmpty()) {
+            return "redirect:/rates";
+        }
+        ShipmentResult shipment = created.get();
 
         // A quote can be used once. Removing it stops a second shipment on refresh or back.
         session.removeAttribute(RateController.SESSION_QUOTE);
         session.setAttribute(SESSION_SHIPMENT, shipment);
-        session.setAttribute(SESSION_SHIPPED_OPTION, option);
         rememberShipment(session, shipment.shipId());
         return "redirect:/shipments/result";
     }
 
     @GetMapping("/shipments/result")
     public String showShipment(HttpSession session, Model model) {
-        if (!(session.getAttribute(SESSION_SHIPMENT) instanceof ShipmentResponse shipment)) {
+        if (!(session.getAttribute(SESSION_SHIPMENT) instanceof ShipmentResult shipment)) {
             return "redirect:/";
         }
         model.addAttribute("shipment", shipment);
-        model.addAttribute("option", session.getAttribute(SESSION_SHIPPED_OPTION));
         return "shipment";
     }
 
@@ -107,10 +101,7 @@ public class ShipmentController {
     }
 
     @SuppressWarnings("unchecked")
-    private static void rememberShipment(HttpSession session, Long shipId) {
-        if (shipId == null) {
-            return;
-        }
+    private static void rememberShipment(HttpSession session, long shipId) {
         Set<Long> ids = (Set<Long>) session.getAttribute(SESSION_SHIPMENT_IDS);
         if (ids == null) {
             ids = new HashSet<>();

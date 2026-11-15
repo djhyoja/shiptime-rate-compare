@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +36,9 @@ import com.hyojinahn.shiptime.client.ShipTimeApiException;
 import com.hyojinahn.shiptime.client.dto.Address;
 import com.hyojinahn.shiptime.client.dto.LineItem;
 import com.hyojinahn.shiptime.client.dto.RateRequest;
-import com.hyojinahn.shiptime.client.dto.ShipmentResponse;
 import com.hyojinahn.shiptime.service.RateOption;
 import com.hyojinahn.shiptime.service.RateQuote;
+import com.hyojinahn.shiptime.service.ShipmentResult;
 import com.hyojinahn.shiptime.service.ShipmentService;
 
 @WebMvcTest(ShipmentController.class)
@@ -58,7 +59,7 @@ class ShipmentControllerTest {
     void createsShipmentAndShowsResult() throws Exception {
         RateQuote quote = sampleQuote();
         MockHttpSession session = sessionWith(quote);
-        when(shipmentService.createShipment(eq(quote.request()), eq(CANPAR))).thenReturn(sampleShipment());
+        when(shipmentService.createShipment(eq(quote), eq("q1"))).thenReturn(sampleShipment());
 
         mockMvc.perform(post("/shipments").param("quoteId", "q1").session(session))
                 .andExpect(status().is3xxRedirection())
@@ -122,11 +123,15 @@ class ShipmentControllerTest {
 
     @Test
     void unknownQuoteIdGoesBackToRates() throws Exception {
-        mockMvc.perform(post("/shipments").param("quoteId", "not-shown").session(sessionWith(sampleQuote())))
+        MockHttpSession session = sessionWith(sampleQuote());
+        when(shipmentService.createShipment(any(), eq("not-shown"))).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/shipments").param("quoteId", "not-shown").session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/rates"));
 
-        verify(shipmentService, never()).createShipment(any(), any());
+        assertThat(session.getAttribute(RateController.SESSION_QUOTE)).isNotNull();
+        assertThat(session.getAttribute(ShipmentController.SESSION_SHIPMENT)).isNull();
     }
 
     @Test
@@ -170,11 +175,11 @@ class ShipmentControllerTest {
         return new RateQuote(request, List.of(CANPAR));
     }
 
-    private static ShipmentResponse sampleShipment() {
-        return new ShipmentResponse(
+    private static Optional<ShipmentResult> sampleShipment() {
+        return Optional.of(new ShipmentResult(
                 4841164L,
                 List.of("D420917200000007637001"),
-                "http://sandboxrestapi.shiptime.com/rest/shipments/4841164/label",
-                "https://carrier.test/track?ref=D420917200000007637001");
+                "https://carrier.test/track?ref=D420917200000007637001",
+                CANPAR));
     }
 }

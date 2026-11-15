@@ -69,7 +69,7 @@ public class RateController {
 
         RateQuote quote;
         try {
-            quote = rateService.getRates(form);
+            quote = rateService.getRates(form.toInput());
         } catch (ShipTimeApiException e) {
             model.addAttribute("errorMessage", userMessage(e));
             model.addAttribute("errorDetails", e.details());

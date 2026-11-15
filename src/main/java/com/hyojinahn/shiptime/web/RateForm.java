@@ -7,6 +7,8 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 
+import com.hyojinahn.shiptime.service.RateInput;
+
 /** Input for a rate quote: two addresses and one package in centimetres and kilograms. */
 public class RateForm {
 
@@ -53,4 +55,9 @@ public class RateForm {
 
     public BigDecimal getWeight() { return weight; }
     public void setWeight(BigDecimal weight) { this.weight = weight; }
+
+    /** Converts the validated form into the service input. */
+    public RateInput toInput() {
+        return new RateInput(from.toInput(), to.toInput(), length, width, height, weight);
+    }
 }
