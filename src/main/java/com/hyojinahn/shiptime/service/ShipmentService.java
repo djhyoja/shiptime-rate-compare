@@ -30,4 +30,9 @@ public class ShipmentService {
                 rateRequest);
         return client.createShipment(request);
     }
+
+    /** The label PDF of a shipment. */
+    public byte[] getLabel(long shipId) {
+        return client.getLabel(shipId);
+    }
 }

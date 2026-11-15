@@ -28,6 +28,7 @@ public class ShipTimeClient {
 
     static final String RATES_PATH = "/rest/rates";
     static final String SHIPMENTS_PATH = "/rest/shipments";
+    static final String LABEL_PATH = "/rest/shipments/{shipId}/label";
 
     private static final Logger log = LoggerFactory.getLogger(ShipTimeClient.class);
 
@@ -53,15 +54,41 @@ public class ShipTimeClient {
     }
 
     /**
+     * Downloads the label PDF of a shipment. The URL is built from the configured
+     * base URL and the shipment ID; the {@code labelUrl} in the shipment response is not followed,
+     * so the credentials only go to the configured host.
+     */
+    public byte[] getLabel(long shipId) {
+        checkConfigured();
+        try {
+            return restClient.get()
+                    .uri(LABEL_PATH, shipId)
+                    .accept(MediaType.APPLICATION_PDF, MediaType.ALL)
+                    .exchange((req, res) -> {
+                        HttpStatusCode status = res.getStatusCode();
+                        if (status.is2xxSuccessful()) {
+                            byte[] pdf = res.bodyTo(byte[].class);
+                            if (pdf != null && pdf.length > 0) {
+                                return pdf;
+                            }
+                            throw ShipTimeApiException.unavailable("ShipTime returned an empty label", null);
+                        }
+                        log.error("ShipTime label for shipment {} failed with status {}", shipId, status.value());
+                        throw ShipTimeApiException.unavailable("ShipTime returned " + status.value(), null);
+                    });
+        } catch (RestClientException e) {
+            throw translate(e);
+        }
+    }
+
+    /**
      * Sends {@code body} as JSON and reads the response.
      * 400 becomes REJECTED with ShipTime's messages; other failures become UNAVAILABLE.
      *
      * @param emptyResult answer for 404 or an empty body; null if those are errors
      */
     private <T> T post(String path, Object body, Class<T> type, Supplier<T> emptyResult) {
-        if (!properties.configured()) {
-            throw ShipTimeApiException.unavailable("ShipTime credentials are not configured", null);
-        }
+        checkConfigured();
         try {
             return restClient.post()
                     .uri(path)
@@ -90,13 +117,24 @@ public class ShipTimeClient {
                         log.error("ShipTime {} failed with status {}", path, status.value());
                         throw ShipTimeApiException.unavailable("ShipTime returned " + status.value(), null);
                     });
-        } catch (ResourceAccessException e) {
-            log.error("Cannot reach ShipTime: {}", e.getMessage());
-            throw ShipTimeApiException.unavailable("Cannot reach ShipTime", e);
         } catch (RestClientException e) {
-            log.error("Unexpected ShipTime response: {}", e.getMessage());
-            throw ShipTimeApiException.unavailable("Unexpected ShipTime response", e);
+            throw translate(e);
         }
+    }
+
+    private void checkConfigured() {
+        if (!properties.configured()) {
+            throw ShipTimeApiException.unavailable("ShipTime credentials are not configured", null);
+        }
+    }
+
+    private static ShipTimeApiException translate(RestClientException e) {
+        if (e instanceof ResourceAccessException) {
+            log.error("Cannot reach ShipTime: {}", e.getMessage());
+            return ShipTimeApiException.unavailable("Cannot reach ShipTime", e);
+        }
+        log.error("Unexpected ShipTime response: {}", e.getMessage());
+        return ShipTimeApiException.unavailable("Unexpected ShipTime response", e);
     }
 
     private static List<String> readMessages(RestClient.RequestHeadersSpec.ConvertibleClientHttpResponse res) {

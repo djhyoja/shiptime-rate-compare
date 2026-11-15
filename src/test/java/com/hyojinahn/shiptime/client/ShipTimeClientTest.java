@@ -188,6 +188,28 @@ class ShipTimeClientTest {
                         e -> assertThat(e.reason()).isEqualTo(ShipTimeApiException.Reason.UNAVAILABLE));
     }
 
+    @Test
+    void downloadsLabelFromConfiguredHostWithBasicAuth() {
+        byte[] pdf = "%PDF-1.4 test".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        server.expect(requestTo(BASE_URL + "/rest/shipments/4841164/label"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, EXPECTED_AUTH))
+                .andRespond(withSuccess(pdf, MediaType.APPLICATION_PDF));
+
+        assertThat(client.getLabel(4841164L)).isEqualTo(pdf);
+        server.verify();
+    }
+
+    @Test
+    void labelErrorIsUnavailable() {
+        server.expect(requestTo(BASE_URL + "/rest/shipments/4841164/label"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThatThrownBy(() -> client.getLabel(4841164L))
+                .isInstanceOfSatisfying(ShipTimeApiException.class,
+                        e -> assertThat(e.reason()).isEqualTo(ShipTimeApiException.Reason.UNAVAILABLE));
+    }
+
     private static RateRequest sampleRequest() {
         Address from = new Address("John Smith", "Acme", "1 Main St", "Oakville", "ON", "L6J1H6", "CA", "905 555 1234");
         Address to = new Address("Jane Doe", "Beta", "100 Queen St W", "Toronto", "ON", "M5H2N2", "CA", "416 555 1234");

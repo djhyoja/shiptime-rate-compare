@@ -2,7 +2,9 @@ package com.hyojinahn.shiptime.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,17 +12,21 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +42,8 @@ import com.hyojinahn.shiptime.service.ShipmentService;
 
 @WebMvcTest(ShipmentController.class)
 class ShipmentControllerTest {
+
+    private static final byte[] PDF = "%PDF-1.4 test".getBytes(StandardCharsets.US_ASCII);
 
     private static final RateOption CANPAR =
             new RateOption("q1", "14", "Canpar", "1", "Ground", new BigDecimal("12.75"), "CAD", 2);
@@ -62,7 +70,41 @@ class ShipmentControllerTest {
                 .andExpect(content().string(containsString("4841164")))
                 .andExpect(content().string(containsString("D420917200000007637001")))
                 .andExpect(content().string(containsString("Canpar Ground")))
-                .andExpect(content().string(containsString("/rest/shipments/4841164/label")));
+                .andExpect(content().string(containsString("href=\"/shipments/4841164/label\"")))
+                .andExpect(content().string(not(containsString("sandboxrestapi.shiptime.com"))));
+    }
+
+    @Test
+    void labelOfOwnShipmentIsServedAsPdf() throws Exception {
+        MockHttpSession session = sessionWith(sampleQuote());
+        when(shipmentService.createShipment(any(), any())).thenReturn(sampleShipment());
+        when(shipmentService.getLabel(4841164L)).thenReturn(PDF);
+        mockMvc.perform(post("/shipments").param("quoteId", "q1").session(session));
+
+        mockMvc.perform(get("/shipments/4841164/label").session(session))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, containsString("label-4841164.pdf")))
+                .andExpect(content().bytes(PDF));
+    }
+
+    @Test
+    void labelOfShipmentFromAnotherSessionIsNotFound() throws Exception {
+        mockMvc.perform(get("/shipments/4841164/label"))
+                .andExpect(status().isNotFound());
+
+        verify(shipmentService, never()).getLabel(anyLong());
+    }
+
+    @Test
+    void labelFailureIsBadGateway() throws Exception {
+        MockHttpSession session = sessionWith(sampleQuote());
+        when(shipmentService.createShipment(any(), any())).thenReturn(sampleShipment());
+        when(shipmentService.getLabel(4841164L)).thenThrow(ShipTimeApiException.unavailable("ShipTime returned 500", null));
+        mockMvc.perform(post("/shipments").param("quoteId", "q1").session(session));
+
+        mockMvc.perform(get("/shipments/4841164/label").session(session))
+                .andExpect(status().isBadGateway());
     }
 
     @Test

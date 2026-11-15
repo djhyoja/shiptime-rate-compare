@@ -1,14 +1,23 @@
 package com.hyojinahn.shiptime.web;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.servlet.http.HttpSession;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.hyojinahn.shiptime.client.ShipTimeApiException;
 import com.hyojinahn.shiptime.client.dto.ShipmentResponse;
@@ -17,7 +26,7 @@ import com.hyojinahn.shiptime.service.RateQuote;
 import com.hyojinahn.shiptime.service.ShipmentService;
 
 /**
- * Step 3: create a shipment for the chosen rate and show the result.
+ * Step 3: create a shipment for the chosen rate, show the result and serve its label.
  * Only the quote ID comes from the page. Carrier, service and the rate request
  * are taken from the quote stored in the session.
  */
@@ -26,6 +35,7 @@ public class ShipmentController {
 
     static final String SESSION_SHIPMENT = "shipment";
     static final String SESSION_SHIPPED_OPTION = "shippedOption";
+    static final String SESSION_SHIPMENT_IDS = "shipmentIds";
 
     private final ShipmentService shipmentService;
 
@@ -60,6 +70,7 @@ public class ShipmentController {
         session.removeAttribute(RateController.SESSION_QUOTE);
         session.setAttribute(SESSION_SHIPMENT, shipment);
         session.setAttribute(SESSION_SHIPPED_OPTION, option);
+        rememberShipment(session, shipment.shipId());
         return "redirect:/shipments/result";
     }
 
@@ -71,6 +82,47 @@ public class ShipmentController {
         model.addAttribute("shipment", shipment);
         model.addAttribute("option", session.getAttribute(SESSION_SHIPPED_OPTION));
         return "shipment";
+    }
+
+    /**
+     * The label needs ShipTime credentials, so the browser cannot open ShipTime's label URL.
+     * This app downloads it and passes the PDF on, only for shipments created in this session.
+     */
+    @GetMapping("/shipments/{shipId}/label")
+    public ResponseEntity<byte[]> downloadLabel(@PathVariable long shipId, HttpSession session) {
+        if (!shipmentIds(session).contains(shipId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        byte[] pdf;
+        try {
+            pdf = shipmentService.getLabel(shipId);
+        } catch (ShipTimeApiException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Label is not available", e);
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename("label-" + shipId + ".pdf").build().toString())
+                .body(pdf);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void rememberShipment(HttpSession session, Long shipId) {
+        if (shipId == null) {
+            return;
+        }
+        Set<Long> ids = (Set<Long>) session.getAttribute(SESSION_SHIPMENT_IDS);
+        if (ids == null) {
+            ids = new HashSet<>();
+        }
+        ids.add(shipId);
+        session.setAttribute(SESSION_SHIPMENT_IDS, ids);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<Long> shipmentIds(HttpSession session) {
+        Object ids = session.getAttribute(SESSION_SHIPMENT_IDS);
+        return ids instanceof Set<?> set ? (Set<Long>) set : Set.of();
     }
 
     private static String userMessage(ShipTimeApiException e) {

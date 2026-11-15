@@ -30,7 +30,7 @@
         </dd>
         <dt>Label</dt>
         <dd>
-            <a th:if="${shipment.labelUrl() != null}" th:href="${shipment.labelUrl()}"
+            <a th:if="${shipment.shipId() != null}" th:href="@{/shipments/{id}/label(id=${shipment.shipId()})}"
                target="_blank" rel="noopener">Download label (PDF)</a>
         </dd>
     </dl>
