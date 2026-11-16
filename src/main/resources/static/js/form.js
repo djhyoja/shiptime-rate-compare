@@ -1,4 +1,4 @@
-// Formats input while the user types. The server still validates every value.
+// Small page helpers. The server still validates every value.
 (function () {
     // "l6j1h6" -> "L6J 1H6"
     function formatPostal(value) {
@@ -23,5 +23,27 @@
         const apply = function () { input.value = format(input.value); };
         input.addEventListener('input', apply);
         apply();
+    });
+
+    // While a slow request runs, the submit button is disabled and shows a busy text.
+    // This also stops a double click from sending the form twice.
+    document.querySelectorAll('button[data-busy-text]').forEach(function (button) {
+        const idleText = button.textContent;
+        button.form.addEventListener('submit', function () {
+            button.disabled = true;
+            button.classList.add('busy');
+            button.textContent = button.dataset.busyText;
+        });
+        // Going back to this page can restore it from the browser cache with the button still disabled.
+        window.addEventListener('pageshow', function () {
+            button.disabled = false;
+            button.classList.remove('busy');
+            button.textContent = idleText;
+        });
+    });
+
+    // Sends the form as soon as a choice changes, for example the sort order.
+    document.querySelectorAll('form[data-autosubmit]').forEach(function (form) {
+        form.addEventListener('change', function () { form.submit(); });
     });
 })();

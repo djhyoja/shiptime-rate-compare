@@ -14,10 +14,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.hyojinahn.shiptime.client.ShipTimeApiException;
 import com.hyojinahn.shiptime.service.RateQuote;
 import com.hyojinahn.shiptime.service.RateService;
+import com.hyojinahn.shiptime.service.RateSort;
 
 /**
  * Step 1: enter addresses and package, then show the rates.
@@ -85,11 +87,14 @@ public class RateController {
     }
 
     @GetMapping("/rates")
-    public String showRates(HttpSession session, Model model) {
+    public String showRates(@RequestParam(required = false) String sort, HttpSession session, Model model) {
         if (!(session.getAttribute(SESSION_QUOTE) instanceof RateQuote quote)) {
             return "redirect:/";
         }
+        RateSort order = RateSort.fromParam(sort);
         model.addAttribute("quote", quote);
+        model.addAttribute("options", order.sort(quote.options()));
+        model.addAttribute("sort", order.param());
         return "rates";
     }
 

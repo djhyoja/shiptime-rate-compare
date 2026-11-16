@@ -1,5 +1,6 @@
 package com.hyojinahn.shiptime.web;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -80,6 +81,24 @@ class RateControllerTest {
                 .andExpect(content().string(containsString("Canpar")))
                 .andExpect(content().string(containsString("$12.75 CAD")))
                 .andExpect(content().string(containsString("Oakville, ON")));
+    }
+
+    @Test
+    void ratesCanBeSortedByTransitTime() throws Exception {
+        RateOption uber = new RateOption("q-uber", "9", "Uber", "1", "Standard", new BigDecimal("5.00"), "CAD", 98);
+        RateOption nationex = new RateOption("q-nx", "172", "Nationex", "GRD", "Ground", new BigDecimal("13.19"), "CAD", 1);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(RateController.SESSION_QUOTE, new RateQuote(sampleRequest(), List.of(uber, nationex)));
+
+        String byPrice = mockMvc.perform(get("/rates").session(session))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(byPrice.indexOf("Uber")).isLessThan(byPrice.indexOf("Nationex"));
+
+        String byTransit = mockMvc.perform(get("/rates").param("sort", "transit").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("sort", "transit"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(byTransit.indexOf("Nationex")).isLessThan(byTransit.indexOf("Uber"));
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.hyojinahn.shiptime.service;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -26,11 +25,6 @@ public class RateService {
     static final String UNIT_OF_MEASUREMENT = "METRIC";
     static final String COUNTRY_CODE = "CA";
 
-    /** Cheapest first; same price → faster first; unknown transit time last. */
-    private static final Comparator<RateOption> BY_PRICE = Comparator
-            .comparing(RateOption::price)
-            .thenComparing(RateOption::transitDays, Comparator.nullsLast(Comparator.naturalOrder()));
-
     private final ShipTimeClient client;
     private final Clock clock;
 
@@ -44,9 +38,8 @@ public class RateService {
         List<RateOption> options = client.getRates(request).rates().stream()
                 .filter(quote -> quote.totalCharge() != null) // drop null price
                 .map(RateService::toOption) // cent to dollar
-                .sorted(BY_PRICE) // sorting
                 .toList();
-        return new RateQuote(request, options);
+        return new RateQuote(request, RateSort.PRICE.sort(options));
     }
 
     RateRequest toRequest(RateInput input) {
@@ -61,7 +54,7 @@ public class RateService {
     }
 
     private static Address toAddress(AddressInput input) {
-        return new Address(
+        return new Address(	
                 input.name().trim(),
                 input.company().trim(),
                 input.street().trim(),
